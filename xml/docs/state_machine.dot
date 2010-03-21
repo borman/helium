@@ -4,15 +4,15 @@ digraph SM {
   MS_BEGIN -> MS_BEGIN [label="space"];
 
   MS_BEGINTAG [label="\N\n\nОткрывающий символ '<'"];
-  MS_BEGINTAG -> MS_MIDDLETAG [label="/"];
+  MS_BEGINTAG -> MS_SLASHTAG [label="/"];
   MS_BEGINTAG -> MS_PROCESSING_INSTRUCTION [label="?"];
   MS_BEGINTAG -> MS_TAGNAME [label="name_start_char"];
 
   MS_PROCESSING_INSTRUCTION [label="\N\n\nИнструкция, \"<? ... ?>\""];
   MS_PROCESSING_INSTRUCTION -> MS_ENDTAG [label="?"];
 
-  MS_MIDDLETAG [label="\N\n\nСлеш в закрывающем теге"];
-  MS_MIDDLETAG -> MS_TAGNAME [label="name_start_char"];
+  MS_SLASHTAG [label="\N\n\nСлеш в закрывающем теге"];
+  MS_SLASHTAG -> MS_TAGNAME [label="name_start_char"];
 
   MS_TAGNAME [label="\N\n\nИмя тега"];
   MS_TAGNAME -> MS_ENDTAGNAME [label="space"];

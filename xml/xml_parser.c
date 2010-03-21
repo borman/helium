@@ -36,6 +36,10 @@
 #include <dmalloc.h>
 #endif
 
+#define MAX_TAGNAME_LENGTH 1024
+#define MAX_ATTRNAME_LENGTH 1024
+#define MAX_ATTRVALUE_LENGTH 1024
+
 /*
  * Char classes
  * (From XML RFC, http://www.w3.org/TR/2008/REC-xml-20081126/#NT-Name )
@@ -44,7 +48,7 @@
  * NameStartChar ::=    ":" | [A-Z] | "_" | [a-z] 
  * NameChar      ::=    NameStartChar | "-" | "." | [0-9]
  * Name          ::=    NameStartChar (NameChar)*
- * */
+ */
 
 static inline int is_space(const char c)
 {
@@ -61,124 +65,67 @@ static inline int is_name_char(const char c)
   return is_name_start_char(c) || c == '-' || c == '.' || (c >= '0' && c <= '9');
 }
 
-char _crlf[2] = {0xd,0xa};
-
-void EndTag(XML_CONTEXT *ctx)
+/* Opens a tag whose name is in TagName field
+ * Attributes will be pushed to this tag
+ * Called at first opening '<'
+ */
+static void XML_BeginTag(XML_CONTEXT *ctx)
 {
-  if((ctx->TagState == TS_NORMAL)||(ctx->TagState == TS_EMPTY))
-  {
-    ctx->tmp=malloc(sizeof(XMLNode));
-    memset(ctx->tmp, 0, sizeof(XMLNode));
-    if (!ctx->XMLTree)
-    {
-      ctx->XMLTree=ctx->tmp;
-    }
-    else
-    {
-      if(!ctx->IsClosed)ctx->current->next=ctx->tmp;
-      else ctx->current->subnode=ctx->tmp;
-    }
-    ctx->tmp->name=malloc(strlen(ctx->TagName)+1);
-    if(ctx->attribs)ctx->tmp->attr=ctx->attribs;
-    ctx->attribs=0;
-    strcpy(ctx->tmp->name,ctx->TagName);
-    *(ctx->TreeBranchs+ctx->BranchPos)=(size_t)ctx->tmp;
-    ctx->BranchPos++;
-    ctx->current=ctx->tmp;
-    ctx->curattr=0;
-    ctx->IsClosed=1;
-  }
-  if((ctx->TagState == TS_EMPTY)||(ctx->TagState == TS_CLOSE))
-  {
-    if(ctx->BranchPos>0)
-    {
-      ctx->BranchPos--;
-      ctx->current=(void*)(*(ctx->TreeBranchs+ctx->BranchPos));
-    }
-    ctx->IsClosed=0;
-  }
+  printf("start tag %s\n", ctx->TagName);
 }
 
-void EndAttr(XML_CONTEXT *ctx)
+/* Completes the tag and pushes it into the stack as an open one
+ * Tags encountered later will be in this tag's subtree
+ * Called at '>' of the start-tag
+ */
+static void XML_PushTag(XML_CONTEXT *ctx)
 {
-  XMLAttr *tmp2=malloc(sizeof(XMLAttr));
-  memset(tmp2, 0, sizeof(XMLAttr));
-  tmp2->name=malloc(strlen(ctx->AttrName)+1);
-  strcpy(tmp2->name,ctx->AttrName);
-  if(strlen(ctx->AttrValue)>0)
-  {
-    char *newattrval = Replace_Special_Syms(ctx->AttrValue);
-    tmp2->param=malloc(strlen(newattrval)+1);
-    strcpy(tmp2->param,newattrval);
-    free(newattrval);
-  }
-
-  if(!ctx->curattr)
-  {
-    ctx->attribs=tmp2;
-  }
-  else
-  {
-    ctx->curattr->next=tmp2;
-  }
-  ctx->curattr=tmp2;
+  printf("push tag %s\n", ctx->TagName);
 }
 
-void DestroyTree(XML_CONTEXT *ctx, XMLNode *tmpp)
+/* Pops the tag whose name is in TagName field
+ * The tag is considered closed from this moment
+ * Called at '>' of the end-tag
+ */
+static void XML_PopTag(XML_CONTEXT *ctx)
 {
-  while(tmpp)
-  {
-    XMLAttr *ta=tmpp->attr;
-    while(ta)
-    {
-      tmpp->attr=ta->next;
-      if(ta->name)free(ta->name);
-      if(ta->param)free(ta->param);
-      free(ta);
-      ta=tmpp->attr;
-    }
-    if(tmpp->subnode)
-    {
-      DestroyTree(ctx, tmpp->subnode);
-    }
-    XMLNode *tmpp2=tmpp->next;
-    if(tmpp->name)free(tmpp->name);
-    if(tmpp->value)free(tmpp->value);
-    free(tmpp);
-    tmpp=tmpp2;
-  }
-
-  ctx->XMLTree=0;
-  ctx->curattr=0;
-  ctx->BranchPos=0;
-  ctx->current = 0;
-  ctx->tmp=0;
-  ctx->attribs=0;
-  ctx->IsClosed=0;
+  printf("pop tag %s\n", ctx->TagName);
 }
 
-static void Finish(XML_CONTEXT *ctx)
+/* Convenience function
+ * Pushes a start-tag, pops an end-tag, push-pops an empty tag
+ */
+static inline void XML_FinishTag(XML_CONTEXT *ctx)
 {
-  free(ctx->TagName);
-  free(ctx->AttrName);
-  free(ctx->AttrValue);
-  free(ctx->Text);
-  free(ctx->TreeBranchs);
+  if (ctx->TagState == TS_EMPTY || ctx->TagState == TS_START)
+    XML_PushTag(ctx);
+  if (ctx->TagState == TS_EMPTY || ctx->TagState == TS_END)
+    XML_PopTag(ctx);
 }
 
-void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
+/* Pushes an attribute key-value pair into current tag
+ * Called at the end of an attribute pair
+ */
+static void XML_PushAttribute(XML_CONTEXT *ctx)
 {
-  ctx->TagName=malloc(size);
-  ctx->AttrName=malloc(size);
-  ctx->AttrValue=malloc(size);
+  printf("  attr %s=%s\n", ctx->AttrName, ctx->AttrValue);
+}
+
+XMLNode *XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
+{
+  ctx->TagName = malloc(MAX_TAGNAME_LENGTH);
+  ctx->AttrName = malloc(MAX_ATTRNAME_LENGTH);
+  ctx->AttrValue = malloc(MAX_ATTRVALUE_LENGTH);
+
+  /*
   ctx->Text=malloc(size);
   ctx->TreeBranchs=malloc(1024);
 
   memset(ctx->TagName, 0, size);
   memset(ctx->AttrName, 0, size);
   memset(ctx->AttrValue, 0, size);
-  memset(ctx->Text, 0, size);
-  ctx->current = 0;
+  */
+
   ctx->MSState = MS_BEGIN;
   ctx->TagState = TS_INDEFINITE;
 
@@ -192,6 +139,9 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
 
     switch (ctx->MSState)
     {
+    /* "   <root-tag ..."
+     *    -^
+     */
     case MS_BEGIN:
       if (c == '<')
         ctx->MSState = MS_BEGINTAG;
@@ -201,25 +151,33 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "<tag ..."
+     * "<? ..."
+     * "</tag ..."
+     *  -^
+     */
     case MS_BEGINTAG:
       strcpy(ctx->AttrName,"");
       if (is_name_start_char(c))
       {
         ctx->MSState = MS_TAGNAME;
-        ctx->TagState = TS_NORMAL;
+        ctx->TagState = TS_START;
         strcpy(ctx->TagName,c_as_string);
       }
       else if (c == '?')
         ctx->MSState = MS_PROCESSING_INSTRUCTION;
       else if (c == '/')
       {
-        ctx->TagState = TS_CLOSE;
-        ctx->MSState = MS_MIDDLETAG;
+        ctx->TagState = TS_END;
+        ctx->MSState = MS_SLASHTAG;
       }
       else
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "<? ... ?>
+     *   -^
+     */
     case MS_PROCESSING_INSTRUCTION:
       if (c == '?')
         ctx->MSState = MS_ENDTAG;
@@ -227,7 +185,10 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
        *   skip char */
       break;
 
-    case MS_MIDDLETAG:
+    /* "</tag ..."
+     *   -^
+     */
+    case MS_SLASHTAG:
       if (is_name_start_char(c))
       {
         ctx->MSState = MS_TAGNAME;
@@ -237,25 +198,42 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "<sometag ..."
+     * "<tag/> ..."
+     * "<tag> ..."
+     *     -^
+     */
     case MS_TAGNAME:
       if (is_name_char(c))
         strcat(ctx->TagName, c_as_string);
       else if (is_space(c))
+      {
         ctx->MSState = MS_ENDTAGNAME;
+        XML_BeginTag(ctx);
+      }
       else if (c == '/')
       {
+        XML_BeginTag(ctx);
+
         ctx->MSState = MS_ENDTAG;
         ctx->TagState = TS_EMPTY;
       }
       else if (c == '>')
       {
         ctx->MSState = MS_TEXT;
-        EndTag(ctx);
+        XML_BeginTag(ctx);
+        XML_FinishTag(ctx);
       }
       else
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "<tag a='b' ..."
+     * "<tag /> ..."
+     * "<tag > ..."
+     * "<tag   ..."
+     *      -^
+     */
     case MS_ENDTAGNAME:
       if (is_name_start_char(c))
       {
@@ -270,12 +248,17 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
       else if (c == '>')
       {
         ctx->MSState = MS_TEXT;
-        EndTag(ctx);
+        XML_FinishTag(ctx);
       }
       else if (!is_space(c))
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "attribute='value'..."
+     * "attr='value'..."
+     * "attr ='value' ..."
+     *     -^
+     */
     case MS_ATTRIBNAME:
       if (is_name_char(c))
         strcat(ctx->AttrName, c_as_string);
@@ -287,6 +270,10 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "attr    = ..."
+     * "attr = ..."
+     *      -^
+     */
     case MS_ENDATTRIBNAME:
       if (c == '=')
         ctx->MSState = MS_ENDEQUALLY;
@@ -296,6 +283,10 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "attr='value' ..."
+     * "attr=  'value' ..."
+     *      -^
+     */
     case MS_ENDEQUALLY:
       if ((c == '\"')||(c == '\''))
       {
@@ -308,51 +299,48 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "attr='abcabcabcabcba ..."
+     * "attr='ab' ..."
+     *         -^
+     */
     case MS_ATTRIBVALUE:
       if ((c == '\"')||(c == '\''))
       {
         ctx->MSState = MS_ENDTAGNAME;
-        EndAttr(ctx);
+        XML_PushAttribute(ctx);
       }
       else
         strcat(ctx->AttrValue, c_as_string);
       break;
 
+    /* "... > ..."
+     *     -^
+     */
     case MS_ENDTAG:
       if (c == '>')
       {
         ctx->MSState = MS_TEXT;
-        EndTag(ctx);
+        XML_FinishTag(ctx);
       }
       else
         ctx->MSState = MS_ERROR;
       break;
 
+    /* "... > ... < ..."
+     *        -^
+     */
     case MS_TEXT:
       if (c == '<')
       {
-        if(strlen(ctx->Text)>0)
-        {
-          //ctx->tmp->value=malloc(strlen(ctx->Text)+1);
-          //strcpy(ctx->tmp->value,ctx->Text);
-          ctx->tmp->value = Replace_Special_Syms(ctx->Text);
-        }
-        strcpy(ctx->Text,"");
         ctx->MSState = MS_BEGINTAG;
         ctx->TagState = TS_INDEFINITE;
-      }
-      else
-      {
-        if ((ctx->TagState == TS_NORMAL)) 
-          strcat(ctx->Text,c_as_string);
       }
       break;
     }
     i++;
   }
 
-  Finish(ctx);
-  return ctx->XMLTree;
+  return NULL;
 }
 
 

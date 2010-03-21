@@ -49,10 +49,9 @@ int main(int argc, char **argv) {
   fclose(input);
 
   XML_CONTEXT ctx;
-  XMLNode *tree = XMLDecode(&ctx, file_buffer, n_read);
+  XMLNode *tree = XML_Decode(&ctx, file_buffer, n_read);
   printf("parsed, tree null: %d\n", tree==NULL);
   dump_xmltree(tree, 0);
  
-  DestroyTree(&ctx, tree);
   return 0;
 }

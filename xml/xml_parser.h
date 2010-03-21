@@ -34,28 +34,18 @@
 
 typedef struct
 {
-  XMLNode *XMLTree;
-  XMLAttr *curattr;
-  size_t *TreeBranchs;
-  size_t BranchPos;
-  XMLNode *current;
-  XMLNode *tmp;
-  XMLAttr *attribs;
-  short IsClosed;
   char *TagName;
   char *AttrName;
   char *AttrValue;
   char *Text;
+
   short TagState;
   short MSState;
 } XML_CONTEXT;
 
 
 // Декодировать поток
-void* XMLDecode(XML_CONTEXT *ctx, char *buf, int size);
-
-// Уничтожить дерево
-void DestroyTree(XML_CONTEXT *ctx, XMLNode *tree);
+XMLNode* XML_Decode(XML_CONTEXT *ctx, char *buf, int size);
 
 /*
   Получить значение атрибута по его имени
@@ -88,26 +78,26 @@ XMLNode* XML_Get_Child_Node_By_Name_And_Attr(XMLNode* node, char* req_node_name,
 
 typedef enum
 {
-  MS_BEGIN,					// Начало парсинга
-  MS_BEGINTAG,					// Начался тег
-  MS_PROCESSING_INSTRUCTION, // Инструкция, "<? ... ?>"
-  MS_MIDDLETAG,					// Середина тега, но еще до имени
-  MS_TAGNAME,						// Парсим имя тега
-  MS_ENDTAGNAME,					// Закончили парсить имя тега
-  MS_ATTRIBNAME,				// Парсим имя аттрибута
-  MS_ENDATTRIBNAME,				// Прочитали имя аттрибута
-  MS_ENDEQUALLY,					// Прошли знак = между именем аттритута и значением
-  MS_ATTRIBVALUE,					// Парсим значение аттрибута (после ")
-  MS_ENDTAG,					// Конец тега (для самозакрывающегося после /)
-  MS_TEXT,						// Текст
-  MS_ERROR  // Ошибка разбора
+  MS_BEGIN,					// Document start
+  MS_BEGINTAG,					// Tag open bracket
+  MS_PROCESSING_INSTRUCTION, // Processing Instruction, "<? ... ?>"
+  MS_SLASHTAG,					// End-tag's slash
+  MS_TAGNAME,						// Start-tag's or empty-tag's name
+  MS_ENDTAGNAME,					// Whitespace after tag name
+  MS_ATTRIBNAME,				// Attribute name
+  MS_ENDATTRIBNAME,				// Whitespace after attribute name
+  MS_ENDEQUALLY,					// Equality sign in an attribute pair
+  MS_ATTRIBVALUE,					// Attribute value inside quotes
+  MS_ENDTAG,					// Tag close bracket
+  MS_TEXT,						// Tag text
+  MS_ERROR  // Parser error
 } XML_PARSER_STATE;
 
 typedef enum
 {
   TS_INDEFINITE,					// Неопределенный, т.к. тег только начали парсить (если начали)
-  TS_NORMAL,						// Обычный (не)закрывающийся. Точно не декларация
-  TS_CLOSE,						// Закрывающийся
+  TS_START,						// Обычный (не)закрывающийся. Точно не декларация
+  TS_END,						// Закрывающийся
   TS_EMPTY						// Сам и закрывается
 } TAG_TYPE;
 
