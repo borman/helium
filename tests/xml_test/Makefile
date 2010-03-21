@@ -10,7 +10,10 @@ TARGET = xml_test
 
 all: $(TARGET)
 
-.PHONY: all
+clean: 
+	rm -f $(TARGET) $(OBJECTS)
+
+.PHONY: all clean
 
 #---
 
