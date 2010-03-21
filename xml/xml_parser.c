@@ -36,24 +36,29 @@
 #include <dmalloc.h>
 #endif
 
-int IsSpace (char c)
+/*
+ * Char classes
+ * (From XML RFC, http://www.w3.org/TR/2008/REC-xml-20081126/#NT-Name )
+ * (Only implementing ASCII subset)
+ * S             ::=    (#x20 | #x9 | #xD | #xA)+
+ * NameStartChar ::=    ":" | [A-Z] | "_" | [a-z] 
+ * NameChar      ::=    NameStartChar | "-" | "." | [0-9]
+ * Name          ::=    NameStartChar (NameChar)*
+ * */
+
+static inline int is_space(const char c)
 {
   return	c == ' ' || c == '\n' || c == '\r' || c == '\t';
 }
 
-int IsLit (char c)
+static inline int is_name_start_char(const char c)
 {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+  return c == ':' || c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-int IsNum (char c)
+static inline int is_name_char(const char c)
 {
-  return (c >= '0' && c <= '9');
-}
-
-int InName (char c)
-{
-  return IsLit(c) || IsNum(c) || c == '_' || c == '-' || c == ':';
+  return is_name_start_char(c) || c == '-' || c == '.' || (c >= '0' && c <= '9');
 }
 
 char _crlf[2] = {0xd,0xa};
@@ -152,7 +157,7 @@ void DestroyTree(XML_CONTEXT *ctx, XMLNode *tmpp)
   ctx->IsClosed=0;
 }
 
-void Finish(XML_CONTEXT *ctx)
+static void Finish(XML_CONTEXT *ctx)
 {
   free(ctx->TagName);
   free(ctx->AttrName);
@@ -163,7 +168,6 @@ void Finish(XML_CONTEXT *ctx)
 
 void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
 {
-
   ctx->TagName=malloc(size);
   ctx->AttrName=malloc(size);
   ctx->AttrValue=malloc(size);
@@ -177,84 +181,67 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
   ctx->current = 0;
   ctx->MSState = MS_BEGIN;
   ctx->TagState = TS_INDEFINITE;
-  char sh_str[2]=".\0";
+
+  char c_as_string[2]=".\0";
   int i = 0;
 
-  while ((i<size))
+  while (ctx->MSState!=MS_ERROR && i<size)
   {
-    char c = *(buf+i);
-    sh_str[0]=c;
+    const char c = buf[i];
+    c_as_string[0]=c;
 
     switch (ctx->MSState)
     {
     case MS_BEGIN:
       if (c == '<')
-      {
         ctx->MSState = MS_BEGINTAG;
-      }
-      else if (!IsSpace (c))
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+      /* else if (is_space(c)) 
+       * skip char */
+      else if (!is_space(c))
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_BEGINTAG:
       strcpy(ctx->AttrName,"");
-      if (IsLit (c))
+      if (is_name_start_char(c))
       {
         ctx->MSState = MS_TAGNAME;
         ctx->TagState = TS_NORMAL;
-        strcpy(ctx->TagName,sh_str);
-
-      }
-      else if (IsSpace(c))
-      {
-        ctx->MSState = MS_MIDDLETAG;
-        ctx->TagState = TS_NORMAL;
+        strcpy(ctx->TagName,c_as_string);
       }
       else if (c == '?')
-      {
-        ctx->TagState = TS_DECLARATION;
-        ctx->MSState = MS_MIDDLETAG;
-      }
+        ctx->MSState = MS_PROCESSING_INSTRUCTION;
       else if (c == '/')
       {
         ctx->TagState = TS_CLOSE;
         ctx->MSState = MS_MIDDLETAG;
       }
       else
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+        ctx->MSState = MS_ERROR;
+      break;
+
+    case MS_PROCESSING_INSTRUCTION:
+      if (c == '?')
+        ctx->MSState = MS_ENDTAG;
+      /* else
+       *   skip char */
       break;
 
     case MS_MIDDLETAG:
-      if (IsLit (c))
+      if (is_name_start_char(c))
       {
         ctx->MSState = MS_TAGNAME;
-        strcpy(ctx->TagName,sh_str);
+        strcpy(ctx->TagName, c_as_string);
       }
-      else if (!IsSpace (c))
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+      else
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_TAGNAME:
-      if (InName (c))
-      {
-        strcat(ctx->TagName,sh_str);
-      }
-      else if (IsSpace(c))
-      {
+      if (is_name_char(c))
+        strcat(ctx->TagName, c_as_string);
+      else if (is_space(c))
         ctx->MSState = MS_ENDTAGNAME;
-      }
       else if (c == '/')
       {
         ctx->MSState = MS_ENDTAG;
@@ -266,18 +253,14 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         EndTag(ctx);
       }
       else
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_ENDTAGNAME:
-      if (IsLit (c))
+      if (is_name_start_char(c))
       {
         ctx->MSState = MS_ATTRIBNAME;
-        strcpy(ctx->AttrName,sh_str);
+        strcpy(ctx->AttrName,c_as_string);
       }
       else if (c == '/')
       {
@@ -289,46 +272,28 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_TEXT;
         EndTag(ctx);
       }
-      else if (!IsSpace(c) && (c != '?' && ctx->TagState != TS_DECLARATION))
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+      else if (!is_space(c))
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_ATTRIBNAME:
-      if (InName(c))
-      {
-        strcat(ctx->AttrName,sh_str);
-      }
+      if (is_name_char(c))
+        strcat(ctx->AttrName, c_as_string);
       else if (c == '=')
-      {
         ctx->MSState = MS_ENDEQUALLY;
-      }
-      else if (IsSpace(c))
-      {
+      else if (is_space(c))
         ctx->MSState = MS_ENDATTRIBNAME;
-      }
       else
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_ENDATTRIBNAME:
       if (c == '=')
-      {
         ctx->MSState = MS_ENDEQUALLY;
-      }
-      else if (!IsSpace(c))
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+      /* else if (is_space(c))
+       *   skip char */
+      else if (!is_space(c))
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_ENDEQUALLY:
@@ -337,12 +302,10 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_ATTRIBVALUE;
         strcpy(ctx->AttrValue,"");
       }
-      else if (!IsSpace(c))
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+      /* else if (is_space(c))
+       *   skip char */
+      else if (!is_space(c))
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_ATTRIBVALUE:
@@ -352,9 +315,7 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         EndAttr(ctx);
       }
       else
-      {
-        strcat(ctx->AttrValue,sh_str);
-      }
+        strcat(ctx->AttrValue, c_as_string);
       break;
 
     case MS_ENDTAG:
@@ -364,15 +325,10 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
         EndTag(ctx);
       }
       else
-      {
-        Finish(ctx);
-        return ctx->XMLTree;//0;
-        //EndParse = 1;
-      }
+        ctx->MSState = MS_ERROR;
       break;
 
     case MS_TEXT:
-
       if (c == '<')
       {
         if(strlen(ctx->Text)>0)
@@ -387,20 +343,16 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
       }
       else
       {
-        if((ctx->TagState == TS_NORMAL)) strcat(ctx->Text,sh_str);
+        if ((ctx->TagState == TS_NORMAL)) 
+          strcat(ctx->Text,c_as_string);
       }
       break;
     }
     i++;
   }
 
-  //if (!EndParse) return 1;
-  //{
-//		Success();
-//	}
-
   Finish(ctx);
-  return ctx->XMLTree;//
+  return ctx->XMLTree;
 }
 
 

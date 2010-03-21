@@ -86,23 +86,29 @@ OUT: дочерний узел или NULL
 XMLNode* XML_Get_Child_Node_By_Name_And_Attr(XMLNode* node, char* req_node_name, char* req_attr_name, char* req_attr_velue);
 ////////////////////////////////////////////////////////////////////////////////
 
-#define MS_BEGIN 1						///< Начало парсинга
-#define MS_BEGINTAG 2					///< Начался тег
-#define MS_MIDDLETAG 3					///< Середина тега, но еще до имени
-#define MS_TAGNAME 4						///< Парсим имя тега
-#define MS_ENDTAGNAME 5					///< Закончили парсить имя тега
-#define MS_ATTRIBNAME 6					///< Парсим имя аттрибута
-#define MS_ENDATTRIBNAME 7				///< Прочитали имя аттрибута
-#define MS_ENDEQUALLY 8					///< Прошли знак = между именем аттритута и значением
-#define MS_ATTRIBVALUE 9					///< Парсим значение аттрибута (после ")
-#define MS_ENDTAG 10						///< Конец тега (для самозакрывающегося после /)
-#define MS_TEXT 11						///< Текст
+typedef enum
+{
+  MS_BEGIN,					// Начало парсинга
+  MS_BEGINTAG,					// Начался тег
+  MS_PROCESSING_INSTRUCTION, // Инструкция, "<? ... ?>"
+  MS_MIDDLETAG,					// Середина тега, но еще до имени
+  MS_TAGNAME,						// Парсим имя тега
+  MS_ENDTAGNAME,					// Закончили парсить имя тега
+  MS_ATTRIBNAME,				// Парсим имя аттрибута
+  MS_ENDATTRIBNAME,				// Прочитали имя аттрибута
+  MS_ENDEQUALLY,					// Прошли знак = между именем аттритута и значением
+  MS_ATTRIBVALUE,					// Парсим значение аттрибута (после ")
+  MS_ENDTAG,					// Конец тега (для самозакрывающегося после /)
+  MS_TEXT,						// Текст
+  MS_ERROR  // Ошибка разбора
+} XML_PARSER_STATE;
 
-
-#define TS_INDEFINITE 1					///< Неопределенный, т.к. тег только начали парсить (если начали)
-#define TS_NORMAL 2						///< Обычный (не)закрывающийся. Точно не декларация
-#define TS_CLOSE 3						///< Закрывающийся
-#define TS_EMPTY 4						///< Сам и закрывается
-#define TS_DECLARATION 5					///< Декларация, что это XML. Парсер аттрибуты игнорирует
+typedef enum
+{
+  TS_INDEFINITE,					// Неопределенный, т.к. тег только начали парсить (если начали)
+  TS_NORMAL,						// Обычный (не)закрывающийся. Точно не декларация
+  TS_CLOSE,						// Закрывающийся
+  TS_EMPTY						// Сам и закрывается
+} TAG_TYPE;
 
 #endif

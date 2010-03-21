@@ -5,28 +5,28 @@ digraph SM {
 
   MS_BEGINTAG [label="\N\n\nОткрывающий символ '<'"];
   MS_BEGINTAG -> MS_MIDDLETAG [label="/"];
-  MS_BEGINTAG -> MS_MIDDLETAG [label="?"];
-  MS_BEGINTAG -> MS_MIDDLETAG [label="space"];
-  MS_BEGINTAG -> MS_TAGNAME [label="letter"];
+  MS_BEGINTAG -> MS_PROCESSING_INSTRUCTION [label="?"];
+  MS_BEGINTAG -> MS_TAGNAME [label="name_start_char"];
 
+  MS_PROCESSING_INSTRUCTION [label="\N\n\nИнструкция, \"<? ... ?>\""];
+  MS_PROCESSING_INSTRUCTION -> MS_ENDTAG [label="?"];
 
-  MS_MIDDLETAG [label="\N\n\nПробельные символы перед именем тега"];
-  MS_MIDDLETAG -> MS_TAGNAME [label="letter"];
-  MS_MIDDLETAG -> MS_MIDDLETAG [label="space"];
+  MS_MIDDLETAG [label="\N\n\nСлеш в закрывающем теге"];
+  MS_MIDDLETAG -> MS_TAGNAME [label="name_start_char"];
 
   MS_TAGNAME [label="\N\n\nИмя тега"];
   MS_TAGNAME -> MS_ENDTAGNAME [label="space"];
   MS_TAGNAME -> MS_TEXT [label=">"];
   MS_TAGNAME -> MS_ENDTAG [label="/"];
-  MS_TAGNAME -> MS_TAGNAME [label="alphanum"];
+  MS_TAGNAME -> MS_TAGNAME [label="name_char"];
 
   MS_ENDTAGNAME [label="\N\n\nПробельные символы после имени тега"];
-  MS_ENDTAGNAME -> MS_ATTRIBNAME [label="letter"];
+  MS_ENDTAGNAME -> MS_ATTRIBNAME [label="name_start_char"];
   MS_ENDTAGNAME -> MS_ENDTAG [label="/"];
 
   MS_ATTRIBNAME -> MS_ENDATTRIBNAME [label="space"];
   MS_ATTRIBNAME -> MS_ENDEQUALLY [label="="];  
-  MS_ATTRIBNAME -> MS_ATTRIBNAME [label="alphanum"];
+  MS_ATTRIBNAME -> MS_ATTRIBNAME [label="name_char"];
   
   MS_ENDATTRIBNAME -> MS_ENDEQUALLY [label="="];
   MS_ENDATTRIBNAME -> MS_ENDATTRIBNAME [label="space"];
@@ -38,7 +38,7 @@ digraph SM {
   MS_ATTRIBVALUE -> MS_ENDTAGNAME [label="', \""];
   MS_ATTRIBVALUE -> MS_ATTRIBVALUE [label="else"];
 
-  MS_ENDTAG[label="\N\n\nЗавершаюзий символ '>'"];
+  MS_ENDTAG[label="\N\n\nЗавершающий символ '>'"];
   MS_ENDTAG -> MS_TEXT [label=">"];
   
   MS_TEXT [label="\N\n\nТекст внутри тега"];
