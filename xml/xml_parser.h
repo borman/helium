@@ -29,6 +29,9 @@
 
 #include "xml_common.h"
 
+// For size_t
+#include <string.h>
+
 typedef struct
 {
   XMLNode *XMLTree;

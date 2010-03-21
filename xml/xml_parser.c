@@ -24,19 +24,13 @@
  * SUCH DAMAGE.
  */
 
-#ifdef SIEMENS
-#include "..\inc\swilib.h"
-#include "main.h"
-#else
+#include "../util/string_util.h"
+#include "xml_common.h"
+#include "xml_parser.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "siemens_compat.h"
-#endif
-
-#include "string_util.h"
-#include "xml_common.h"
-#include "xml_parser.h"
 
 #ifdef DMALLOC
 #include <dmalloc.h>
@@ -69,7 +63,7 @@ void EndTag(XML_CONTEXT *ctx)
   if((ctx->TagState == TS_NORMAL)||(ctx->TagState == TS_EMPTY))
   {
     ctx->tmp=malloc(sizeof(XMLNode));
-    zeromem(ctx->tmp,sizeof(XMLNode));
+    memset(ctx->tmp, 0, sizeof(XMLNode));
     if (!ctx->XMLTree)
     {
       ctx->XMLTree=ctx->tmp;
@@ -103,7 +97,7 @@ void EndTag(XML_CONTEXT *ctx)
 void EndAttr(XML_CONTEXT *ctx)
 {
   XMLAttr *tmp2=malloc(sizeof(XMLAttr));
-  zeromem(tmp2,sizeof(XMLAttr));
+  memset(tmp2, 0, sizeof(XMLAttr));
   tmp2->name=malloc(strlen(ctx->AttrName)+1);
   strcpy(tmp2->name,ctx->AttrName);
   if(strlen(ctx->AttrValue)>0)
@@ -111,7 +105,7 @@ void EndAttr(XML_CONTEXT *ctx)
     char *newattrval = Replace_Special_Syms(ctx->AttrValue);
     tmp2->param=malloc(strlen(newattrval)+1);
     strcpy(tmp2->param,newattrval);
-    mfree(newattrval);
+    free(newattrval);
   }
 
   if(!ctx->curattr)
@@ -133,9 +127,9 @@ void DestroyTree(XML_CONTEXT *ctx, XMLNode *tmpp)
     while(ta)
     {
       tmpp->attr=ta->next;
-      if(ta->name)mfree(ta->name);
-      if(ta->param)mfree(ta->param);
-      mfree(ta);
+      if(ta->name)free(ta->name);
+      if(ta->param)free(ta->param);
+      free(ta);
       ta=tmpp->attr;
     }
     if(tmpp->subnode)
@@ -143,9 +137,9 @@ void DestroyTree(XML_CONTEXT *ctx, XMLNode *tmpp)
       DestroyTree(ctx, tmpp->subnode);
     }
     XMLNode *tmpp2=tmpp->next;
-    if(tmpp->name)mfree(tmpp->name);
-    if(tmpp->value)mfree(tmpp->value);
-    mfree(tmpp);
+    if(tmpp->name)free(tmpp->name);
+    if(tmpp->value)free(tmpp->value);
+    free(tmpp);
     tmpp=tmpp2;
   }
 
@@ -160,11 +154,11 @@ void DestroyTree(XML_CONTEXT *ctx, XMLNode *tmpp)
 
 void Finish(XML_CONTEXT *ctx)
 {
-  mfree(ctx->TagName);
-  mfree(ctx->AttrName);
-  mfree(ctx->AttrValue);
-  mfree(ctx->Text);
-  mfree(ctx->TreeBranchs);
+  free(ctx->TagName);
+  free(ctx->AttrName);
+  free(ctx->AttrValue);
+  free(ctx->Text);
+  free(ctx->TreeBranchs);
 }
 
 void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
@@ -176,10 +170,10 @@ void *XMLDecode(XML_CONTEXT *ctx, char *buf, int size)
   ctx->Text=malloc(size);
   ctx->TreeBranchs=malloc(1024);
 
-  zeromem(ctx->TagName,size);
-  zeromem(ctx->AttrName,size);
-  zeromem(ctx->AttrValue,size);
-  zeromem(ctx->Text,size);
+  memset(ctx->TagName, 0, size);
+  memset(ctx->AttrName, 0, size);
+  memset(ctx->AttrValue, 0, size);
+  memset(ctx->Text, 0, size);
   ctx->current = 0;
   ctx->MSState = MS_BEGIN;
   ctx->TagState = TS_INDEFINITE;

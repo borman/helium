@@ -24,21 +24,14 @@
  * SUCH DAMAGE.
  */
 
-#include "platform.h"
-#ifdef SIEMENS
-#include "../inc/swilib.h"
-#else
+#include "../util/string_util.h"
+#include "xml_common.h"
+#include "xml_gen.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdio.h>
-
-#include "siemens_compat.h"
-#endif
-
-#include "string_util.h"
-#include "xml_common.h"
-#include "xml_gen.h"
 
 #ifdef DMALLOC
 #include <dmalloc.h>
@@ -166,7 +159,7 @@ XML_Get_Node_As_Text(XMLNode *node)
     l = strlen(conv_param);
     CHK(buf, l);
     strncpy(buf + occ_len, conv_param, buf_len - occ_len);
-    mfree(conv_param);
+    free(conv_param);
     occ_len+=l;
     buf[occ_len++]='"';
     attr = attr->next;
@@ -187,7 +180,7 @@ XML_Get_Node_As_Text(XMLNode *node)
         CHK(buf, l);
         strncpy(buf + occ_len, sub_buf, buf_len - occ_len);
         occ_len+=l;
-        mfree(sub_buf);
+        free(sub_buf);
       }
       sn = sn->next;
     }
@@ -212,7 +205,7 @@ XML_Get_Node_As_Text(XMLNode *node)
 //			occ_len++;
       strncpy(buf + occ_len, conv_param, buf_len - occ_len);
       occ_len+=l;
-      mfree(conv_param);
+      free(conv_param);
       /* Closing tag */
       l = strlen(node->name);
       CHK(buf, l+3);

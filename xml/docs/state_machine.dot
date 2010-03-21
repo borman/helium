@@ -1,0 +1,47 @@
+digraph SM {
+  MS_BEGIN [label="\N\n\nНачало документа"];
+  MS_BEGIN -> MS_BEGINTAG [label="<"];
+  MS_BEGIN -> MS_BEGIN [label="space"];
+
+  MS_BEGINTAG [label="\N\n\nОткрывающий символ '<'"];
+  MS_BEGINTAG -> MS_MIDDLETAG [label="/"];
+  MS_BEGINTAG -> MS_MIDDLETAG [label="?"];
+  MS_BEGINTAG -> MS_MIDDLETAG [label="space"];
+  MS_BEGINTAG -> MS_TAGNAME [label="letter"];
+
+
+  MS_MIDDLETAG [label="\N\n\nПробельные символы перед именем тега"];
+  MS_MIDDLETAG -> MS_TAGNAME [label="letter"];
+  MS_MIDDLETAG -> MS_MIDDLETAG [label="space"];
+
+  MS_TAGNAME [label="\N\n\nИмя тега"];
+  MS_TAGNAME -> MS_ENDTAGNAME [label="space"];
+  MS_TAGNAME -> MS_TEXT [label=">"];
+  MS_TAGNAME -> MS_ENDTAG [label="/"];
+  MS_TAGNAME -> MS_TAGNAME [label="alphanum"];
+
+  MS_ENDTAGNAME [label="\N\n\nПробельные символы после имени тега"];
+  MS_ENDTAGNAME -> MS_ATTRIBNAME [label="letter"];
+  MS_ENDTAGNAME -> MS_ENDTAG [label="/"];
+
+  MS_ATTRIBNAME -> MS_ENDATTRIBNAME [label="space"];
+  MS_ATTRIBNAME -> MS_ENDEQUALLY [label="="];  
+  MS_ATTRIBNAME -> MS_ATTRIBNAME [label="alphanum"];
+  
+  MS_ENDATTRIBNAME -> MS_ENDEQUALLY [label="="];
+  MS_ENDATTRIBNAME -> MS_ENDATTRIBNAME [label="space"];
+
+  MS_ENDEQUALLY -> MS_ATTRIBVALUE [label="', \""];
+  MS_ENDEQUALLY -> MS_ENDEQUALLY [label="space"];
+  
+  MS_ATTRIBVALUE [label="\N\n\nЗначение аттрибута"];
+  MS_ATTRIBVALUE -> MS_ENDTAGNAME [label="', \""];
+  MS_ATTRIBVALUE -> MS_ATTRIBVALUE [label="else"];
+
+  MS_ENDTAG[label="\N\n\nЗавершаюзий символ '>'"];
+  MS_ENDTAG -> MS_TEXT [label=">"];
+  
+  MS_TEXT [label="\N\n\nТекст внутри тега"];
+  MS_TEXT -> MS_BEGINTAG [label="<"];
+  MS_TEXT -> MS_TEXT [label="else"];
+}
