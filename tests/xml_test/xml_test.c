@@ -12,46 +12,66 @@
 
 #define MAXFILESIZE 65536
 
-void dump_xmltree(XMLNode *node, int level) {
-  if (node==NULL) 
+void dump_xmltree(XMLNode *node, int level)
+{
+  char indent[40];
+  for (int i=0; i<level*2; i++)
+    indent[i] = ' ';
+  indent[level] = '\x00';
+
+  if (node==NULL)
     return;
 
   char *name = node->name;
   if (name==NULL)
     name = "<NULL>";
-  
-  printf("%s {\n", name);
-  dump_xmltree(node->subnode, level+1);
-  printf("}");
 
-  dump_xmltree(node->next, level); 
+  printf("%s%s {\n", indent, name);
+
+  XMLAttr *attr = node->attr;
+  while (attr)
+  {
+    printf("%s \"%s\" = \"%s\"\n", indent, attr->name, attr->value);
+    attr = attr->next;
+  }
+
+  dump_xmltree(node->subnode, level+1);
+
+  printf("%s}\n", indent);
+
+  dump_xmltree(node->next, level);
 }
 
 char file_buffer[MAXFILESIZE];
 
-int main(int argc, char **argv) {
-  if (argc!=2) {
+int main(int argc, char **argv)
+{
+  if (argc!=2)
+  {
     printf("Usage: %s <file.xml>\n", argv[0]);
     return 1;
   }
 
   FILE *input = fopen(argv[1], "r");
-  if (input==NULL) {
+  if (input==NULL)
+  {
     perror(strerror(errno));
     return 1;
   }
 
   size_t n_read = fread(file_buffer, sizeof(char), MAXFILESIZE, input);
-  if (ferror(input)) {
+  if (ferror(input))
+  {
     perror(strerror(errno));
     return 1;
   }
   fclose(input);
 
-  XML_CONTEXT ctx;
-  XMLNode *tree = XML_Decode(&ctx, file_buffer, n_read);
-  printf("parsed, tree null: %d\n", tree==NULL);
-  dump_xmltree(tree, 0);
- 
+  XML_CONTEXT *ctx = XML_CreateContext();
+  XML_Decode(ctx, file_buffer, n_read);
+  printf("parsed, tree null: %d\n", ctx->Root==NULL);
+  dump_xmltree(ctx->Root, 0);
+  XML_DestroyContext(ctx);
+
   return 0;
 }

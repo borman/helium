@@ -24,13 +24,14 @@
  * SUCH DAMAGE.
  */
 
-#include "../util/string_util.h"
-#include "xml_common.h"
-#include "xml_parser.h"
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "../util/string_util.h"
+#include "xml_common.h"
+#include "xml_parser.h"
+#include "xml_memory.h"
 
 #ifdef DMALLOC
 #include <dmalloc.h>
@@ -71,7 +72,8 @@ static inline int is_name_char(const char c)
  */
 static void XML_BeginTag(XML_CONTEXT *ctx)
 {
-  printf("start tag %s\n", ctx->TagName);
+  ctx->CurrentTag = XML_AllocNode();
+  ctx->CurrentTag->name = strdup(ctx->TagName);
 }
 
 /* Completes the tag and pushes it into the stack as an open one
@@ -80,7 +82,17 @@ static void XML_BeginTag(XML_CONTEXT *ctx)
  */
 static void XML_PushTag(XML_CONTEXT *ctx)
 {
-  printf("push tag %s\n", ctx->TagName);
+  if (ctx->History[ctx->pHistory])
+    ctx->History[ctx->pHistory]->next = ctx->CurrentTag;
+  else if (ctx->pHistory>0)
+    ctx->History[ctx->pHistory-1]->subnode = ctx->CurrentTag;
+  else
+    ctx->Root = ctx->CurrentTag;
+  ctx->History[ctx->pHistory] = ctx->CurrentTag;
+
+  ctx->pHistory++;
+  ctx->History[ctx->pHistory] = NULL;
+  ctx->CurrentTag = NULL;
 }
 
 /* Pops the tag whose name is in TagName field
@@ -89,7 +101,7 @@ static void XML_PushTag(XML_CONTEXT *ctx)
  */
 static void XML_PopTag(XML_CONTEXT *ctx)
 {
-  printf("pop tag %s\n", ctx->TagName);
+  ctx->pHistory--;
 }
 
 /* Convenience function
@@ -108,27 +120,42 @@ static inline void XML_FinishTag(XML_CONTEXT *ctx)
  */
 static void XML_PushAttribute(XML_CONTEXT *ctx)
 {
-  printf("  attr %s=%s\n", ctx->AttrName, ctx->AttrValue);
+  XMLAttr *attr = XML_AllocAttr();
+  attr->name = strdup(ctx->AttrName);
+  attr->value = strdup(ctx->AttrValue);
+  attr->next = ctx->CurrentTag->attr;
+  ctx->CurrentTag->attr = attr;
 }
 
-XMLNode *XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
+XML_CONTEXT *XML_CreateContext()
 {
+  XML_CONTEXT *ctx = malloc(sizeof(XML_CONTEXT));
+
   ctx->TagName = malloc(MAX_TAGNAME_LENGTH);
   ctx->AttrName = malloc(MAX_ATTRNAME_LENGTH);
   ctx->AttrValue = malloc(MAX_ATTRVALUE_LENGTH);
 
-  /*
-  ctx->Text=malloc(size);
-  ctx->TreeBranchs=malloc(1024);
-
-  memset(ctx->TagName, 0, size);
-  memset(ctx->AttrName, 0, size);
-  memset(ctx->AttrValue, 0, size);
-  */
+  ctx->CurrentTag = NULL;
+  ctx->Root = NULL;
+  ctx->pHistory = 0;
+  ctx->History[0] = NULL;
 
   ctx->MSState = MS_BEGIN;
   ctx->TagState = TS_INDEFINITE;
 
+  return ctx;
+}
+
+void XML_DestroyContext(XML_CONTEXT *ctx)
+{
+  free(ctx->TagName);
+  free(ctx->AttrName);
+  free(ctx->AttrValue);
+  free(ctx);
+}
+
+void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
+{
   char c_as_string[2]=".\0";
   int i = 0;
 
@@ -162,7 +189,7 @@ XMLNode *XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
       {
         ctx->MSState = MS_TAGNAME;
         ctx->TagState = TS_START;
-        strcpy(ctx->TagName,c_as_string);
+        strcpy(ctx->TagName, c_as_string);
       }
       else if (c == '?')
         ctx->MSState = MS_PROCESSING_INSTRUCTION;
@@ -339,8 +366,6 @@ XMLNode *XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
     }
     i++;
   }
-
-  return NULL;
 }
 
 
@@ -356,7 +381,7 @@ char* XML_Get_Attr_Value(char* req_attr_name, XMLAttr* attr_list)
   while(attr_Ex)
   {
     if(attr_Ex->name)
-      if(!strcmp(req_attr_name, attr_Ex->name)) return attr_Ex->param;
+      if(!strcmp(req_attr_name, attr_Ex->name)) return attr_Ex->value;
     attr_Ex = attr_Ex->next;
   }
   return NULL;

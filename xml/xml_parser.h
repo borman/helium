@@ -32,20 +32,29 @@
 // For size_t
 #include <string.h>
 
+#define MAX_XML_TREE_DEPTH 100
+
 typedef struct
 {
   char *TagName;
   char *AttrName;
   char *AttrValue;
-  char *Text;
 
   short TagState;
   short MSState;
+
+  XMLNode *Root;
+  XMLNode *History[MAX_XML_TREE_DEPTH];
+  int pHistory;
+
+  XMLNode *CurrentTag;
 } XML_CONTEXT;
 
+XML_CONTEXT *XML_CreateContext();
+void XML_DestroyContext(XML_CONTEXT *ctx);
 
 // Декодировать поток
-XMLNode* XML_Decode(XML_CONTEXT *ctx, char *buf, int size);
+void XML_Decode(XML_CONTEXT *ctx, char *buf, int size);
 
 /*
   Получить значение атрибута по его имени

@@ -31,7 +31,7 @@ typedef struct
 {
   void *next;
   char *name;
-  char *param;
+  char *value;
 } XMLAttr;
 
 
