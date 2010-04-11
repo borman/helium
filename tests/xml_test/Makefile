@@ -1,9 +1,9 @@
 VPATH = .:../../xml:../../util
 
 INCLUDES = -I../..
-CFLAGS = $(INCLUDES) -g -Wall --std=gnu99
+CFLAGS = $(INCLUDES) -g -Wall -pedantic --std=gnu99
 
-OBJECTS = xml_test.o xml_parser.o xml_memory.o string_util.o 
+OBJECTS = xml_test.o xml_parser.o xml_memory.o strbuf.o
 TARGET = xml_test
 
 #---
@@ -20,14 +20,7 @@ clean:
 $(TARGET): $(OBJECTS)
 	$(CC) -o $@ $(OBJECTS)
 
-%.o: %.c
+%.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< 
 
-xml_test.o: xml_parser.h xml_common.h
-
-xml_gen.o: xml_common.h xml_gen.h string_util.h
-
-xml_parser.o:  xml_parser.h xml_common.h string_util.h xml_memory.h
-
-string_util.o: string_util.h
 

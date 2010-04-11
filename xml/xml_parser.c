@@ -24,22 +24,18 @@
  * SUCH DAMAGE.
  */
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include "../util/string_util.h"
+#include "util/strbuf.h"
 #include "xml_common.h"
 #include "xml_parser.h"
 #include "xml_memory.h"
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #ifdef DMALLOC
 #include <dmalloc.h>
 #endif
-
-#define MAX_TAGNAME_LENGTH 1024
-#define MAX_ATTRNAME_LENGTH 1024
-#define MAX_ATTRVALUE_LENGTH 1024
 
 /*
  * Char classes
@@ -73,7 +69,8 @@ static inline int is_name_char(const char c)
 static void XML_BeginTag(XML_CONTEXT *ctx)
 {
   ctx->CurrentTag = XML_AllocNode();
-  ctx->CurrentTag->name = strdup(ctx->TagName);
+  ctx->CurrentTag->name = ctx->TagName;
+  ctx->TagName = NULL;
 }
 
 /* Completes the tag and pushes it into the stack as an open one
@@ -83,9 +80,9 @@ static void XML_BeginTag(XML_CONTEXT *ctx)
 static void XML_PushTag(XML_CONTEXT *ctx)
 {
   if (ctx->History[ctx->pHistory])
-    ctx->History[ctx->pHistory]->next = ctx->CurrentTag;
+    ctx->History[ctx->pHistory]->next_sibling = ctx->CurrentTag;
   else if (ctx->pHistory>0)
-    ctx->History[ctx->pHistory-1]->subnode = ctx->CurrentTag;
+    ctx->History[ctx->pHistory-1]->first_child = ctx->CurrentTag;
   else
     ctx->Root = ctx->CurrentTag;
   ctx->History[ctx->pHistory] = ctx->CurrentTag;
@@ -112,7 +109,11 @@ static inline void XML_FinishTag(XML_CONTEXT *ctx)
   if (ctx->TagState == TS_EMPTY || ctx->TagState == TS_START)
     XML_PushTag(ctx);
   if (ctx->TagState == TS_EMPTY || ctx->TagState == TS_END)
+  {
     XML_PopTag(ctx);
+    if (ctx->TagState == TS_END)
+      XML_DestroyTree(ctx->CurrentTag);
+  }
 }
 
 /* Pushes an attribute key-value pair into current tag
@@ -121,8 +122,12 @@ static inline void XML_FinishTag(XML_CONTEXT *ctx)
 static void XML_PushAttribute(XML_CONTEXT *ctx)
 {
   XMLAttr *attr = XML_AllocAttr();
-  attr->name = strdup(ctx->AttrName);
-  attr->value = strdup(ctx->AttrValue);
+
+  attr->name = ctx->AttrName;
+  ctx->AttrName = NULL;
+  attr->value = ctx->AttrValue;
+  ctx->AttrValue = NULL;
+
   attr->next = ctx->CurrentTag->attr;
   ctx->CurrentTag->attr = attr;
 }
@@ -131,9 +136,9 @@ XML_CONTEXT *XML_CreateContext()
 {
   XML_CONTEXT *ctx = malloc(sizeof(XML_CONTEXT));
 
-  ctx->TagName = malloc(MAX_TAGNAME_LENGTH);
-  ctx->AttrName = malloc(MAX_ATTRNAME_LENGTH);
-  ctx->AttrValue = malloc(MAX_ATTRVALUE_LENGTH);
+  ctx->TagName = NULL;
+  ctx->AttrName = NULL;
+  ctx->AttrValue = NULL;
 
   ctx->CurrentTag = NULL;
   ctx->Root = NULL;
@@ -148,9 +153,10 @@ XML_CONTEXT *XML_CreateContext()
 
 void XML_DestroyContext(XML_CONTEXT *ctx)
 {
-  free(ctx->TagName);
-  free(ctx->AttrName);
-  free(ctx->AttrValue);
+  strbuf_free(ctx->TagName);
+  strbuf_free(ctx->AttrName);
+  strbuf_free(ctx->AttrValue);
+
   free(ctx);
 }
 
@@ -184,12 +190,11 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
      *  -^
      */
     case MS_BEGINTAG:
-      strcpy(ctx->AttrName,"");
       if (is_name_start_char(c))
       {
         ctx->MSState = MS_TAGNAME;
         ctx->TagState = TS_START;
-        strcpy(ctx->TagName, c_as_string);
+        strbuf_xappend(&ctx->TagName, c, STRBUF_SIZE_SMALL);
       }
       else if (c == '?')
         ctx->MSState = MS_PROCESSING_INSTRUCTION;
@@ -218,8 +223,8 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
     case MS_SLASHTAG:
       if (is_name_start_char(c))
       {
+        strbuf_xappend(&ctx->TagName, c, STRBUF_SIZE_SMALL);
         ctx->MSState = MS_TAGNAME;
-        strcpy(ctx->TagName, c_as_string);
       }
       else
         ctx->MSState = MS_ERROR;
@@ -232,7 +237,7 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
      */
     case MS_TAGNAME:
       if (is_name_char(c))
-        strcat(ctx->TagName, c_as_string);
+        strbuf_xappend(&ctx->TagName, c, STRBUF_SIZE_SMALL);
       else if (is_space(c))
       {
         ctx->MSState = MS_ENDTAGNAME;
@@ -265,7 +270,7 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
       if (is_name_start_char(c))
       {
         ctx->MSState = MS_ATTRIBNAME;
-        strcpy(ctx->AttrName,c_as_string);
+        strbuf_xappend(&ctx->AttrName, c, STRBUF_SIZE_SMALL);
       }
       else if (c == '/')
       {
@@ -288,7 +293,7 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
      */
     case MS_ATTRIBNAME:
       if (is_name_char(c))
-        strcat(ctx->AttrName, c_as_string);
+        strbuf_xappend(&ctx->AttrName, c, STRBUF_SIZE_SMALL);
       else if (c == '=')
         ctx->MSState = MS_ENDEQUALLY;
       else if (is_space(c))
@@ -316,10 +321,7 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
      */
     case MS_ENDEQUALLY:
       if ((c == '\"')||(c == '\''))
-      {
         ctx->MSState = MS_ATTRIBVALUE;
-        strcpy(ctx->AttrValue,"");
-      }
       /* else if (is_space(c))
        *   skip char */
       else if (!is_space(c))
@@ -337,7 +339,7 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
         XML_PushAttribute(ctx);
       }
       else
-        strcat(ctx->AttrValue, c_as_string);
+        strbuf_xappend(&ctx->AttrValue, c, STRBUF_SIZE_SMALL);
       break;
 
     /* "... > ..."
@@ -368,69 +370,3 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
   }
 }
 
-
-/*
-  Получить значение атрибута по его имени
-IN: char* req_attr_name - название атрибута
-    XMLAttr* attr_list  - список атрибутов тега
-OUT: значение атрибута или NULL
-*/
-char* XML_Get_Attr_Value(char* req_attr_name, XMLAttr* attr_list)
-{
-  XMLAttr* attr_Ex = attr_list;
-  while(attr_Ex)
-  {
-    if(attr_Ex->name)
-      if(!strcmp(req_attr_name, attr_Ex->name)) return attr_Ex->value;
-    attr_Ex = attr_Ex->next;
-  }
-  return NULL;
-}
-
-/*
-  Получить дочерний узел из списка дочерних узлов по его имени
-IN: XMLNode* node         - родительский узел
-    char* req_node_name   - имя требуемого узла
-OUT: дочерний узел или NULL
-*/
-XMLNode* XML_Get_Child_Node_By_Name(XMLNode* node, char* req_node_name)
-{
-  XMLNode* nodeEx = node->subnode;
-  while(nodeEx)
-  {
-    if(nodeEx->name)
-      if(!strcmp(req_node_name, nodeEx->name)) return nodeEx;
-    nodeEx = nodeEx->next;
-  }
-  return NULL;
-}
-
-/*
-  Получить дочерний узел из списка дочерних узлов по его имени,
-  при условии, что существует заданный атрибут с заданным значением
-IN: XMLNode* node         - родительский узел
-    char* req_node_name   - имя требуемого узла
-    char* req_attr_name   - имя атрибута
-    char* req_attr_velue  - значение атрибута
-OUT: дочерний узел или NULL
-*/
-XMLNode* XML_Get_Child_Node_By_Name_And_Attr(XMLNode* node, char* req_node_name, char* req_attr_name, char* req_attr_velue)
-{
-  XMLNode* nodeEx = node->subnode;
-  while(nodeEx)
-  {
-    if(nodeEx->name)
-      if(!strcmp(req_node_name, nodeEx->name))    // Если найден нод с нужным именем
-      {
-        char *attr_val = XML_Get_Attr_Value(req_attr_name, nodeEx->attr);
-        if(attr_val)    // Если есть требуемый атрибут
-        {
-          if(!strcmp(attr_val, req_attr_velue))return nodeEx;
-        }
-      }
-    nodeEx = nodeEx->next;
-  }
-  return NULL;
-}
-
-//EOL,EOF

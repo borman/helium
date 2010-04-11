@@ -6,5 +6,7 @@
 XMLNode *XML_AllocNode();
 XMLAttr *XML_AllocAttr();
 
+void XML_DestroyTree(XMLNode *root);
+
 #endif // XML_MEMORY_H
 

@@ -27,21 +27,23 @@
 #ifndef _XML_COMMON_
 #define _XML_COMMON_
 
+#include "util/strbuf.h"
+
 typedef struct
 {
   void *next;
-  char *name;
-  char *value;
+  STRBUF *name;
+  STRBUF *value;
 } XMLAttr;
 
 
 typedef struct
 {
-  void *next;
-  void *subnode;
-  char *name;
+  void *next_sibling;
+  void *first_child;
+  STRBUF *name;
   XMLAttr *attr;
-  char *value;
+  STRBUF *value;
 } XMLNode;
 
 #endif

@@ -36,9 +36,9 @@
 
 typedef struct
 {
-  char *TagName;
-  char *AttrName;
-  char *AttrValue;
+  STRBUF *TagName;
+  STRBUF *AttrName;
+  STRBUF *AttrValue;
 
   short TagState;
   short MSState;
@@ -56,33 +56,6 @@ void XML_DestroyContext(XML_CONTEXT *ctx);
 // Декодировать поток
 void XML_Decode(XML_CONTEXT *ctx, char *buf, int size);
 
-/*
-  Получить значение атрибута по его имени
-IN: char* req_attr_name - название атрибута
-    XMLAttr* attr_list  - список атрибутов тега
-OUT: значение атрибута или NULL
-*/
-char* XML_Get_Attr_Value(char* req_attr_name, XMLAttr* attr_list);
-
-
-/*
-  Получить дочерний узел из списка дочерних узлов по его имени
-IN: XMLNode* node         - родительский узел
-    char* req_node_name   - имя требуемого узла
-OUT: дочерний узел или NULL
-*/
-XMLNode* XML_Get_Child_Node_By_Name(XMLNode* node, char* req_node_name);
-
-/*
-  Получить дочерний узел из списка дочерних узлов по его имени,
-  при условии, что существует заданный атрибут с заданным значением
-IN: XMLNode* node         - родительский узел
-    char* req_node_name   - имя требуемого узла
-    char* req_attr_name   - имя атрибута
-    char* req_attr_velue  - значение атрибута
-OUT: дочерний узел или NULL
-*/
-XMLNode* XML_Get_Child_Node_By_Name_And_Attr(XMLNode* node, char* req_node_name, char* req_attr_name, char* req_attr_velue);
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef enum

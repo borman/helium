@@ -5,6 +5,7 @@
  */
 
 #include "xml/xml_parser.h"
+#include "xml/xml_memory.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -22,7 +23,7 @@ void dump_xmltree(XMLNode *node, int level)
   if (node==NULL)
     return;
 
-  char *name = node->name;
+  char *name = node->name->d;
   if (name==NULL)
     name = "<NULL>";
 
@@ -31,15 +32,15 @@ void dump_xmltree(XMLNode *node, int level)
   XMLAttr *attr = node->attr;
   while (attr)
   {
-    printf("%s \"%s\" = \"%s\"\n", indent, attr->name, attr->value);
+    printf("%s \"%s\" = \"%s\"\n", indent, attr->name->d, attr->value->d);
     attr = attr->next;
   }
 
-  dump_xmltree(node->subnode, level+1);
+  dump_xmltree(node->first_child, level+1);
 
   printf("%s}\n", indent);
 
-  dump_xmltree(node->next, level);
+  dump_xmltree(node->next_sibling, level);
 }
 
 char file_buffer[MAXFILESIZE];
@@ -71,6 +72,7 @@ int main(int argc, char **argv)
   XML_Decode(ctx, file_buffer, n_read);
   printf("parsed, tree null: %d\n", ctx->Root==NULL);
   dump_xmltree(ctx->Root, 0);
+  XML_DestroyTree(ctx->Root);
   XML_DestroyContext(ctx);
 
   return 0;
