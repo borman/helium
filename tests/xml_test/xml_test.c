@@ -35,7 +35,7 @@ static void dump_xmltree(XMLNode *node, int level)
   }
 
   if (node->text)
-    printf("%s[[%s]]", indent, node->text->d);
+    printf("%s[[%s]]\n", indent, node->text->d);
 
   dump_xmltree(node->first_child, level+1);
 
