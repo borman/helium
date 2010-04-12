@@ -29,10 +29,11 @@
 
 #include "xml_common.h"
 
-// For size_t
 #include <string.h>
 
 #define MAX_XML_TREE_DEPTH 100
+
+typedef void (*XMLCallback)(XMLNode *tree);
 
 typedef struct
 {
@@ -44,10 +45,14 @@ typedef struct
   short MSState;
 
   XMLNode *Root;
-  XMLNode *History[MAX_XML_TREE_DEPTH];
-  int pHistory;
-
   XMLNode *CurrentTag;
+
+  XMLCallback onStreamBegin;
+  XMLCallback onStanza;
+  XMLCallback onStreamEnd;
+
+  int pHistory;
+  XMLNode *History[MAX_XML_TREE_DEPTH];
 } XML_CONTEXT;
 
 XML_CONTEXT *XML_CreateContext();

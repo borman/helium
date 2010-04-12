@@ -13,7 +13,7 @@
 
 #define MAXFILESIZE 65536
 
-void dump_xmltree(XMLNode *node, int level)
+static void dump_xmltree(XMLNode *node, int level)
 {
   char indent[40];
   for (int i=0; i<level*2; i++)
@@ -43,6 +43,26 @@ void dump_xmltree(XMLNode *node, int level)
   dump_xmltree(node->next_sibling, level);
 }
 
+static void stanza_callback(XMLNode *stanza)
+{
+  printf("--> Stanza:\n");
+  dump_xmltree(stanza, 2);
+  XML_DestroyTree(stanza);
+}
+
+static void stream_begin_callback(XMLNode *stream)
+{
+  printf("--> stream begin:\n");
+  dump_xmltree(stream, 2);
+}
+
+static void stream_end_callback(XMLNode *stream)
+{
+  printf("--> stream end:\n");
+  dump_xmltree(stream, 2);
+  XML_DestroyTree(stream);
+}
+
 char file_buffer[MAXFILESIZE];
 
 int main(int argc, char **argv)
@@ -69,10 +89,12 @@ int main(int argc, char **argv)
   fclose(input);
 
   XML_CONTEXT *ctx = XML_CreateContext();
+  ctx->onStanza = stanza_callback;
+  ctx->onStreamBegin = stream_begin_callback;
+  ctx->onStreamEnd = stream_end_callback;
   XML_Decode(ctx, file_buffer, n_read);
   printf("parsed, tree null: %d\n", ctx->Root==NULL);
-  dump_xmltree(ctx->Root, 0);
-  XML_DestroyTree(ctx->Root);
+  //dump_xmltree(ctx->Root, 0);
   XML_DestroyContext(ctx);
 
   return 0;

@@ -7,6 +7,7 @@
 static unsigned int n_allocs = 0;
 static unsigned int n_reallocs = 0;
 static unsigned int n_frees = 0;
+static unsigned int max_used = 0;
 
 static inline size_t next_size(size_t size)
 {
@@ -22,7 +23,11 @@ STRBUF *strbuf_alloc(size_t size)
   buf->size = size;
   buf->d = malloc(size);
   buf->d[0] = 0;
+
   n_allocs++;
+  if (n_allocs-n_frees>max_used)
+    max_used = n_allocs-n_frees;
+
   return buf;
 }
 
@@ -35,7 +40,7 @@ void strbuf_free(STRBUF *buf)
   free(buf);
   n_frees++;
 
-  fprintf(stderr, "[strbuf] %u/%u/%u\n", n_allocs, n_frees, n_reallocs);
+  fprintf(stderr, "[strbuf] a=%u f=%u r=%u b=%u\n", n_allocs, n_frees, n_reallocs, max_used);
 }
 
 void strbuf_append(STRBUF *buf, char c)

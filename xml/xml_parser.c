@@ -79,13 +79,19 @@ static void XML_BeginTag(XML_CONTEXT *ctx)
  */
 static void XML_PushTag(XML_CONTEXT *ctx)
 {
-  if (ctx->History[ctx->pHistory])
+  if (ctx->History[ctx->pHistory]) /* There's a tag at this level, add a sibling to it */
     ctx->History[ctx->pHistory]->next_sibling = ctx->CurrentTag;
-  else if (ctx->pHistory>0)
-    ctx->History[ctx->pHistory-1]->first_child = ctx->CurrentTag;
-  else
+  else if (ctx->pHistory==0)  /* Root tag */
     ctx->Root = ctx->CurrentTag;
+  else if (ctx->pHistory>1) /* Stanza's subtree */
+    ctx->History[ctx->pHistory-1]->first_child = ctx->CurrentTag;
+  /* Stanzas are not linked to root */
+
   ctx->History[ctx->pHistory] = ctx->CurrentTag;
+
+  /* stream header completed */
+  if (ctx->pHistory==0 && ctx->onStreamBegin!=NULL)
+    ctx->onStreamBegin(ctx->History[0]);
 
   ctx->pHistory++;
   ctx->History[ctx->pHistory] = NULL;
@@ -99,6 +105,17 @@ static void XML_PushTag(XML_CONTEXT *ctx)
 static void XML_PopTag(XML_CONTEXT *ctx)
 {
   ctx->pHistory--;
+
+  /* level 1: stanza */
+  if (ctx->pHistory==1 && ctx->onStanza!=NULL)
+  {
+    ctx->onStanza(ctx->History[1]);
+    ctx->History[1] = NULL; /* Forget about this subtree */
+  }
+
+  /* level 0: stream header */
+  if (ctx->pHistory==0 && ctx->onStreamEnd!=NULL)
+    ctx->onStreamEnd(ctx->History[0]);
 }
 
 /* Convenience function
@@ -112,7 +129,10 @@ static inline void XML_FinishTag(XML_CONTEXT *ctx)
   {
     XML_PopTag(ctx);
     if (ctx->TagState == TS_END)
+    {
       XML_DestroyTree(ctx->CurrentTag);
+      ctx->CurrentTag = NULL;
+    }
   }
 }
 
@@ -134,16 +154,7 @@ static void XML_PushAttribute(XML_CONTEXT *ctx)
 
 XML_CONTEXT *XML_CreateContext()
 {
-  XML_CONTEXT *ctx = malloc(sizeof(XML_CONTEXT));
-
-  ctx->TagName = NULL;
-  ctx->AttrName = NULL;
-  ctx->AttrValue = NULL;
-
-  ctx->CurrentTag = NULL;
-  ctx->Root = NULL;
-  ctx->pHistory = 0;
-  ctx->History[0] = NULL;
+  XML_CONTEXT *ctx = calloc(1, sizeof(XML_CONTEXT));
 
   ctx->MSState = MS_BEGIN;
   ctx->TagState = TS_INDEFINITE;
