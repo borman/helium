@@ -11,8 +11,6 @@
 #include <errno.h>
 #include <string.h>
 
-#define MAXFILESIZE 65536
-
 static void dump_xmltree(XMLNode *node, int level)
 {
   char indent[40];
@@ -66,7 +64,9 @@ static void stream_end_callback(XMLNode *stream)
   XML_DestroyTree(stream);
 }
 
-char file_buffer[MAXFILESIZE];
+#define BUFSIZE 1
+
+char file_buffer[BUFSIZE];
 
 int main(int argc, char **argv)
 {
@@ -83,19 +83,23 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  size_t n_read = fread(file_buffer, sizeof(char), MAXFILESIZE, input);
-  if (ferror(input))
-  {
-    perror(strerror(errno));
-    return 1;
-  }
-  fclose(input);
-
   XML_CONTEXT *ctx = XML_CreateContext();
   ctx->onStanza = stanza_callback;
   ctx->onStreamBegin = stream_begin_callback;
   ctx->onStreamEnd = stream_end_callback;
-  XML_Decode(ctx, file_buffer, n_read);
+
+  while (!feof(input))
+  {
+    size_t n_read = fread(file_buffer, sizeof(char), BUFSIZE, input);
+    if (ferror(input))
+    {
+      perror(strerror(errno));
+      return 1;
+    }
+    XML_Decode(ctx, file_buffer, n_read);
+  }
+  fclose(input);
+
   printf("parsed, tree null: %d\n", ctx->Root==NULL);
   //dump_xmltree(ctx->Root, 0);
   XML_DestroyContext(ctx);
