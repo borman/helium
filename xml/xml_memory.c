@@ -26,7 +26,7 @@ void XML_DestroyTree(XMLNode *root)
   }
 
   strbuf_free(root->name);
-  strbuf_free(root->value);
+  strbuf_free(root->text);
 
   XMLNode *child = root->first_child;
   while (child != NULL)

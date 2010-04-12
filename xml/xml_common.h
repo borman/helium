@@ -43,7 +43,7 @@ typedef struct
   void *first_child;
   STRBUF *name;
   XMLAttr *attr;
-  STRBUF *value;
+  STRBUF *text;
 } XMLNode;
 
 #endif

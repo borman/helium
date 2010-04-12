@@ -10,7 +10,8 @@ typedef enum
 
 typedef enum
 {
-  STRBUF_SIZE_SMALL = 16
+  STRBUF_SIZE_SMALL = 16,
+  STRBUF_SIZE_MEDIUM = 256
 } STRBUF_SIZE;
 
 typedef struct

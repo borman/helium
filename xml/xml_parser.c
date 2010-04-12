@@ -375,6 +375,8 @@ void XML_Decode(XML_CONTEXT *ctx, char *buf, int size)
         ctx->MSState = MS_BEGINTAG;
         ctx->TagState = TS_INDEFINITE;
       }
+      else if (ctx->pHistory>0) /* inside a tag */
+        strbuf_xappend(&(ctx->History[ctx->pHistory-1]->text), c, STRBUF_SIZE_MEDIUM);
       break;
     }
     i++;
