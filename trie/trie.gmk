@@ -1,0 +1,9 @@
+ifndef UNIT_TRIE
+UNIT_TRIE = true
+include $(TOPDIR)/common/common.gmk
+
+vpath %.h $(TOPDIR)/trie
+vpath %.c $(TOPDIR)/trie
+
+SOURCES += trie.c ctrie.c
+endif

@@ -1,4 +1,10 @@
-vpath % $(TOPDIR)/xml
+ifndef UNIT_XML
+UNIT_XML = true
+include $(TOPDIR)/common/common.gmk
+
+vpath %.h $(TOPDIR)/xml
+vpath %.c $(TOPDIR)/xml
 
 SOURCES += xml_memory.c xml_parser.c
-INCLUDES += -I$(TOPDIR)
+endif
+# vim:filetype=make:

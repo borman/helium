@@ -1,4 +1,9 @@
-vpath % $(TOPDIR)/common
+ifndef UNIT_COMMON
+UNIT_COMMON := true
+
+vpath %.h $(TOPDIR)/common
+vpath %.c $(TOPDIR)/common
 
 SOURCES += strbuf.c
-INCLUDES += -I$(TOPDIR)
+endif
+# vim:filetype=make:

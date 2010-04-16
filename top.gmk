@@ -2,7 +2,8 @@
 # SOURCES
 # TARGET
 
-CFLAGS = $(INCLUDES) -g -Wall -pedantic --std=gnu99
+INCLUDES += -I$(TOPDIR)
+CFLAGS += $(INCLUDES) -g -Wall -pedantic --std=gnu99
 
 OBJECTS = $(SOURCES:.c=.o)
 DEPENDS = $(SOURCES:.c=.d)
