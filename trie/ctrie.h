@@ -7,6 +7,8 @@
 
 typedef struct _CTRIE_NODE
 {
+  unsigned int position;
+  unsigned int value;
   unsigned int n_links;
   struct 
   {

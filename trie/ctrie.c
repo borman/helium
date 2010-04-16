@@ -26,6 +26,7 @@ void ctrie_rfree(CTRIE_NODE *node)
 CTRIE_NODE *ctrie_from_trie(TRIE_NODE *trie)
 {
   CTRIE_NODE *ctrie = ctrie_alloc();
+  ctrie->value = trie->value;
   for (int c=0; c<256; c++)
     if (trie->links[c]!=NULL)
     {
@@ -44,7 +45,7 @@ CTRIE_NODE *ctrie_compact(CTRIE_NODE *node)
 {
   for (unsigned int i=0; i<node->n_links; i++)
   {
-    while (node->links[i].next->n_links==1)
+    while (node->links[i].next->n_links==1 && node->links[i].next->value==0)
     {
       CTRIE_NODE *tmp = node->links[i].next;
       strbuf_cat(node->links[i].str, tmp->links[0].str);
@@ -67,6 +68,9 @@ void ctrie_print(CTRIE_NODE *node)
   strcpy(out, current);
   if (strlen(out)==0)
     strcpy(out, "<NULL>");
+
+  printf("\"%s\" [label=\"%s [%u]\", fillcolor=\"%s\", style=\"filled\"];\n", 
+      out, out, node->value, (node->value)==0?"white":"#AAFFAA");
 
   int length = strlen(current);
   for (unsigned int i=0; i<node->n_links; i++)

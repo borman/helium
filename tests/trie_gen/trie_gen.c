@@ -10,6 +10,7 @@ int main()
 {
   char word[256];
   TRIE_NODE *trie = trie_alloc();
+  unsigned int index;
   while (scanf("%s", word)>0)
   {
     if (word[0]=='#') /* Skip comments */
@@ -17,7 +18,10 @@ int main()
       getline(NULL, NULL, stdin);
       continue;
     }
-    trie = trie_add(trie, word);
+    int ret;
+    trie = trie_add(trie, word, index, &ret);
+    if (ret)
+      index++;
   }
   CTRIE_NODE *ctrie = ctrie_compact(ctrie_from_trie(trie));
   trie_rfree(trie);
