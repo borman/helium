@@ -1,0 +1,7 @@
+# VIM backups and swaps
+*~
+*.swp
+
+# build-time generated files
+*.d
+*.o
