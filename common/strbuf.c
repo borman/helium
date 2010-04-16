@@ -40,7 +40,10 @@ void strbuf_free(STRBUF *buf)
   free(buf);
   n_frees++;
 
-  fprintf(stderr, "[strbuf] a=%u f=%u r=%u b=%u\n", n_allocs, n_frees, n_reallocs, max_used);
+  /** Debug
+   * TODO: attach a debugging unit
+   */
+  //fprintf(stderr, "[strbuf] a=%u f=%u r=%u b=%u\n", n_allocs, n_frees, n_reallocs, max_used);
 }
 
 void strbuf_append(STRBUF *buf, char c)
@@ -57,5 +60,24 @@ void strbuf_append(STRBUF *buf, char c)
 
   buf->d[length] = c;
   buf->d[length+1] = 0;
+}
+
+STRBUF *strbuf_cat(STRBUF *dest, const STRBUF *src)
+{
+  assert(dest!=NULL);
+  assert(src!=NULL);
+
+  size_t dest_length = strlen(dest->d);
+  size_t src_length = strlen(src->d);
+  if (dest_length+src_length+1 > dest->size) /* Grow */
+  {
+    while (dest_length+src_length+1 > dest->size)    
+      dest->size = next_size(dest->size);
+    dest->d = realloc(dest->d, dest->size);
+    n_reallocs++;
+  }
+
+  strcat(dest->d, src->d);
+  return dest;
 }
 

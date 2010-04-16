@@ -49,5 +49,10 @@ static inline void strbuf_xappend(STRBUF **buf, char c, size_t size)
   strbuf_append(*buf, c);
 }
 
+/**
+ * Append src to dest. Returns dest.
+ */
+STRBUF *strbuf_cat(STRBUF *dest, const STRBUF *src);
+
 #endif // STRBUF_H
 
