@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  */
 
-#include "util/strbuf.h"
+#include "common/strbuf.h"
 #include "xml_common.h"
 #include "xml_parser.h"
 #include "xml_memory.h"

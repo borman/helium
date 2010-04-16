@@ -1,0 +1,37 @@
+# INCLUDES
+# SOURCES
+# TARGET
+
+CFLAGS = $(INCLUDES) -g -Wall -pedantic --std=gnu99
+
+OBJECTS = $(SOURCES:.c=.o)
+DEPENDS = $(SOURCES:.c=.d)
+
+#---
+
+all: $(TARGET)
+
+clean: 
+	rm -f $(TARGET) $(OBJECTS) $(DEPENDS)
+
+.PHONY: all clean
+
+#---
+
+$(TARGET): $(OBJECTS)
+	@echo LINK $(@F)
+	@echo "  [$(^F)]"
+	@$(CC) -o $@ $(OBJECTS)
+
+%.o: %.c
+	@echo CC   $(<F)
+	@$(CC) $(CFLAGS) -c $< 
+
+%.d: %.c
+	@echo DEP  $(<F)
+	@$(CC) $(CFLAGS) -MF $@ -MM $<
+	@sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' -i $@
+
+-include $(DEPENDS)
+
+# vim:filetype=make:

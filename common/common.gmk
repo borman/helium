@@ -1,0 +1,4 @@
+vpath % $(TOPDIR)/common
+
+SOURCES += strbuf.c
+INCLUDES += -I$(TOPDIR)

@@ -1,0 +1,4 @@
+vpath % $(TOPDIR)/xml
+
+SOURCES += xml_memory.c xml_parser.c
+INCLUDES += -I$(TOPDIR)

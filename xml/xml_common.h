@@ -27,7 +27,7 @@
 #ifndef _XML_COMMON_
 #define _XML_COMMON_
 
-#include "util/strbuf.h"
+#include "common/strbuf.h"
 
 typedef struct
 {
