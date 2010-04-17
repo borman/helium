@@ -7,7 +7,6 @@
 
 typedef struct _CTRIE_NODE
 {
-  unsigned int position;
   unsigned int value;
   unsigned int n_links;
   struct 
@@ -15,6 +14,10 @@ typedef struct _CTRIE_NODE
     STRBUF *str;
     struct _CTRIE_NODE *next;
   } links[256];
+
+  /* info for serialization */
+  unsigned int s_position;
+  unsigned int s_size;
 } CTRIE_NODE;
 
 /** Allocate an empty ctrie node
