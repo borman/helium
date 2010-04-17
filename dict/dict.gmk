@@ -1,0 +1,8 @@
+ifndef UNIT_DICT
+UNIT_DICT = true
+
+vpath %.h $(TOPDIR)/dict
+vpath %.c $(TOPDIR)/dict
+
+SOURCES += dict.c
+endif

@@ -50,7 +50,7 @@ static void ctrie_set_positions(CTRIE_NODE *node, unsigned int *current_position
   assert(current_position!=NULL);
 
   node->s_position = *current_position;
-  node->s_size = 2 + 1 + node->n_links;
+  node->s_size = 1/*value*/ + 1/*n_links*/ + node->n_links/*links*/;
   assert(node->n_links<256);
   for (unsigned int i=0; i<node->n_links; i++)
     node->s_size += 2+strlen(node->links[i].str->d)+1;
@@ -91,12 +91,12 @@ static void ctrie_print_serialized(CTRIE_NODE *node, unsigned int indent, FILE *
   /* Write links: u16_le + <ASCIIZ-string> */
   for (unsigned int i=0; i<node->n_links; i++)
   {
-    unsigned int link_offset = node->links[i].next->s_position; /* FIXME */
+    unsigned int link_offset = node->links[i].next->s_position;
     assert(link_offset<65536);
     for (unsigned int i=0; i<indent+2; i++)
       fputc(' ', file);
     fprintf(file, "/*->*/ \"" XCHAR XCHAR "\" \"%s\\x00\"\n", 
-      link_offset>>8, link_offset&0xff, node->links[i].str->d);
+      link_offset&0xff, link_offset>>8, node->links[i].str->d);
   }
 
   for (unsigned int i=0; i<node->n_links; i++)
