@@ -1,0 +1,165 @@
+#Namespace urn:ietf:params:xml:ns:xmpp-bind
+urn:ietf:params:xml:ns:xmpp-bind
+  bind
+  resource
+  jid
+#Namespace jabber:client
+jabber:client
+  message
+    from
+    id
+    to
+    type
+      chat
+      error
+      groupchat
+      headline
+      normal
+    
+  body
+    
+  subject
+    
+  thread
+  presence
+    from
+    id
+    to
+    type
+      error
+      probe
+      subscribe
+      subscribed
+      unavailable
+      unsubscribe
+      unsubscribed
+    
+  show
+      away
+      chat
+      dnd
+      xa
+  status
+    
+  priority
+  iq
+    from
+    id
+    to
+    type
+      error
+      get
+      result
+      set
+    
+  error
+    code
+    type
+      auth
+      cancel
+      continue
+      modify
+      wait
+#Namespace jabber:iq:roster
+jabber:iq:roster
+  query
+  item
+    ask
+      subscribe
+    jid
+    name
+    subscription
+      both
+      from
+      none
+      remove
+      to
+  group
+#Namespace urn:ietf:params:xml:ns:xmpp-sasl
+urn:ietf:params:xml:ns:xmpp-sasl
+  mechanisms
+  mechanism
+  auth
+    mechanism
+  challenge
+  response
+  abort
+  success
+  failure
+  aborted
+  incorrect-encoding
+  invalid-authzid
+  invalid-mechanism
+  mechanism-too-weak
+  not-authorized
+  temporary-auth-failure
+      
+#Namespace urn:ietf:params:xml:ns:xmpp-session
+urn:ietf:params:xml:ns:xmpp-session
+  session
+      
+#Namespace urn:ietf:params:xml:ns:xmpp-stanzas
+urn:ietf:params:xml:ns:xmpp-stanzas
+  bad-request
+  conflict
+  feature-not-implemented
+  forbidden
+  gone
+  internal-server-error
+  item-not-found
+  jid-malformed
+  not-acceptable
+  not-allowed
+  payment-required
+  recipient-unavailable
+  redirect
+  registration-required
+  remote-server-not-found
+  remote-server-timeout
+  resource-constraint
+  service-unavailable
+  subscription-required
+  undefined-condition
+  unexpected-request
+  text
+    
+      
+#Namespace urn:ietf:params:xml:ns:xmpp-streams
+urn:ietf:params:xml:ns:xmpp-streams
+  bad-format
+  bad-namespace-prefix
+  conflict
+  connection-timeout
+  host-gone
+  host-unknown
+  improper-addressing
+  internal-server-error
+  invalid-from
+  invalid-id
+  invalid-namespace
+  invalid-xml
+  not-authorized
+  policy-violation
+  remote-connection-failed
+  resource-constraint
+  restricted-xml
+  see-other-host
+  system-shutdown
+  undefined-condition
+  unsupported-encoding
+  unsupported-stanza-type
+  unsupported-version
+  xml-not-well-formed
+  text
+    
+      
+#Namespace http://etherx.jabber.org/streams
+http://etherx.jabber.org/streams
+  stream
+    from
+    id
+    to
+    version
+    
+  features
+  error

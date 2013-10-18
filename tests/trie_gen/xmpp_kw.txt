@@ -1,0 +1,96 @@
+stream:stream
+
+# Stream features
+stream:features
+starttls
+mechanisms
+mechanism
+register
+
+# SASL
+proceed
+failure
+
+# Stream errors
+stream:error
+bad-format
+bad-namespace-prefix
+conflict
+connection-timeout
+host-gone
+host-unknown
+improper-addressing
+internal-server-error
+invalid-from
+invalid-id
+invalid-namespace
+invalid-xml
+not-authorized
+policy-violation
+remote-connection-failed
+resource-constraint
+restricted-xml
+see-other-host
+system-shutdown
+undefined-condition
+unsupported-encoding
+unsupported-stanza-type
+unsupported-version
+xml-not-well-formed
+
+# stanzas
+message
+iq
+presence
+
+# stanza attributes
+from
+to
+id
+type
+xml:lang
+
+# stanza errors
+bad-request
+conflict
+feature-not-implemented
+forbidden
+internal-server-error
+item-not-found
+jid-malformed
+not-acceptable
+not-allowed
+payment-required
+recipient-unavailable
+redirect
+registration-required
+remote-server-not-found
+remote-server-timeout
+resource-constraint
+service-unavailable
+subscription-required
+undefined-condition
+unexpected-request
+
+# message stuff
+body
+subject
+thread
+
+
+# namespace stuff
+xmlns
+xmlns:stream
+http://etherx.jabber.org/streams
+jabber:client
+jabber:iq:auth
+jabber:iq:privacy
+jabber:iq:roster
+
+urn:ietf:params:xml:ns:xmpp-streams
+urn:ietf:params:xml:ns:xmpp-session
+urn:ietf:params:xml:ns:xmpp-tls
+urn:ietf:params:xml:ns:xmpp-sasl
+urn:ietf:params:xml:ns:xmpp-bind
+urn:ietf:params:xml:ns:xmpp-stanzas
+

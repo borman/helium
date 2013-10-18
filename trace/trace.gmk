@@ -1,0 +1,10 @@
+ifndef UNIT_TRACE
+UNIT_TRACE := true
+
+vpath %.h $(TOPDIR)/trace
+vpath %.c $(TOPDIR)/trace
+
+SOURCES += instrument.c
+CFLAGS += -finstrument-functions
+endif
+# vim:filetype=make:

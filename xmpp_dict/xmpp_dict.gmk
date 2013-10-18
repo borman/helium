@@ -1,0 +1,20 @@
+ifndef UNIT_XMPP_DICT
+UNIT_XMPP_DICT = true
+
+vpath %.h $(TOPDIR)/xmpp_dict
+vpath %.c $(TOPDIR)/xmpp_dict
+vpath %.txt $(TOPDIR)/xmpp_dict
+
+DICT_GEN = $(TOPDIR)/util/dict_gen/dict_gen
+
+all:
+
+.PHONY: make_dict_gen
+make_dict_gen: 
+	$(MAKE) -C $(dir $(DICT_GEN)) 
+
+$(TOPDIR)/xmpp_dict/xmpp_dict.c $(TOPDIR)/xmpp_dict/xmpp_dict.h: $(DICT_GEN) xmpp_tokens.txt
+	$(DICT_GEN) $(TOPDIR)/xmpp_dict/xmpp_dict.c $(TOPDIR)/xmpp_dict/xmpp_dict.h < $(TOPDIR)/xmpp_dict/xmpp_tokens.txt
+
+SOURCES += xmpp_dict.c
+endif

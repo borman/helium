@@ -64,7 +64,7 @@ static void stream_end_callback(XMLNode *stream)
   XML_DestroyTree(stream);
 }
 
-#define BUFSIZE 1
+#define BUFSIZE 128
 
 char file_buffer[BUFSIZE];
 
